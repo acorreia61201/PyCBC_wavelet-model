@@ -11,13 +11,13 @@ from pycbc.types import TimeSeries
 
 pi = np.pi
 
-def parse_params(**kwargs)
+def parse_params(**kwargs):
     """Generate dictionaries for each wavelet's parameters.
     Checks if the minimum required parameters are provided.
     """
     # number of wavelets
     try:
-	w = kwargs['wavelet_number']
+        w = kwargs['wavelet_number']
     except KeyError:
         raise ValueError('Must provide number of wavelets to generate')
 
@@ -28,38 +28,38 @@ def parse_params(**kwargs)
     etas = {}
 
     for i in len(w):
-	s = str(i)
+        s = str(i)
         # amplitude
-	try:
-	    amps[i] = kwargs['amp' + s]
-	except KeyError:
-	    raise ValueError(f'missing amp{i}')
+        try:
+            amps[i] = kwargs['amp' + s]
+        except KeyError:
+            raise ValueError(f'missing amp{i}')
 
 	# frequencies
-	try:
-	    freqs[i] = kwargs['freq' + s]
-	except KeyError:
-	    raise ValueError(f'missing freq{i}')
+        try:
+            freqs[i] = kwargs['freq' + s]
+        except KeyError:
+            raise ValueError(f'missing freq{i}')
 
 	# damping times
-	try:
-	    taus[i] = kwargs['tau' + s]
-	except KeyError:
-	    raise ValueError(f'missing tau{i}')
+        try:
+            taus[i] = kwargs['tau' + s]
+        except KeyError:
+            raise ValueError(f'missing tau{i}')
 
 	# phases
-	try:
-	    phis[i] = kwargs['phi' + s]
-	except KeyError:
-	    raise ValueError(f'missing phi{i}')
+        try:
+            phis[i] = kwargs['phi' + s]
+        except KeyError:
+            raise ValueError(f'missing phi{i}')
 
 	# ref times
-	try:
-	    etas[i] = kwargs['eta' + s]
-	except KeyError:
-	    raise ValueError(f'missing eta{i}')
+        try:
+            etas[i] = kwargs['eta' + s]
+        except KeyError:
+            raise ValueError(f'missing eta{i}')
 
-	return w, amps, freqs, taus, phis, etas
+        return w, amps, freqs, taus, phis, etas
 
 def get_td_wavelet(f, tau, amp, phi, eta, end_time):
     r"""Generate a single wavelet in the time domain.
@@ -191,7 +191,7 @@ def wavelet_sum_base(input_params, domain):
     ### just implementing time domain for now
     ### need to confirm if fd wavelets are unchanged when imposing finite start time
     if domain == 'fd':
-	raise NotImplementedError('Frequency domain wavelets not yet implemented')
+        raise NotImplementedError('Frequency domain wavelets not yet implemented')
 
     # allocate hp, hc vectors using the maximum wavelet length
     max_eta = max(etas.items())
@@ -201,10 +201,10 @@ def wavelet_sum_base(input_params, domain):
 
     # generate wavelets and add to out vectors
     for i in range(w):
-	wavelet_start_idx = ceil(int((tc - 2*etas[i])/dt))
-	hp, hc = get_td_wavelet(freqs[i], taus[i], amps[i], phis[i], etas[i], tc)
-	hp_out[wavelet_start_idx:] += hp
-	hc_out[wavelet_start_idx:] += hc
+        wavelet_start_idx = ceil(int((tc - 2*etas[i])/dt))
+        hp, hc = get_td_wavelet(freqs[i], taus[i], amps[i], phis[i], etas[i], tc)
+        hp_out[wavelet_start_idx:] += hp
+        hc_out[wavelet_start_idx:] += hc
 
     return hp_out, hc_out
 
