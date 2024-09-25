@@ -63,7 +63,7 @@ def parse_params(**kwargs)
 
 def get_td_wavelet(f, tau, amp, phi, eta, end_time):
     r"""Generate a single wavelet in the time domain.
-        This uses the Morlet-Gabot formula:
+        This uses the Morlet-Gabot formula as listed in arXiv:2108.09344:
 
 	.. math::
 
@@ -73,7 +73,7 @@ def get_td_wavelet(f, tau, amp, phi, eta, end_time):
 
     Parameters
     ----------
-    A : float
+    amp : float
         The wavelet amplitude.
 
     phi : float
@@ -95,6 +95,11 @@ def get_td_wavelet(f, tau, amp, phi, eta, end_time):
     end_time : float
 	The end time in seconds of the wavelet. For example, if using for a merger model,
 	this corresponds to the coalescence time of the signal.
+
+    Returns
+    -------
+    (array, array)
+        The time domain plus and cross polarizations of the wavelet.
     """
     # generate a time series for the wavelet
     start_time = end_time - 2*eta
@@ -104,12 +109,66 @@ def get_td_wavelet(f, tau, amp, phi, eta, end_time):
     # evaluate the wavelet
     offset = t - eta
     nondim_offset = offset/tau
-    wf = A*np.exp(-2*pi*1j*f*offset - nondim_offset*nomdim_offset - 1j*phi)
+    wf = amp*np.exp(-2*pi*1j*f*offset - nondim_offset*nondim_offset + 1j*phi)
 
     # retrieve the plus and cross polarizations
     hp = wf.real
-    hc = wf.imag
+    hc = -wf.imag
     return hp, hc
+
+def get_fd_wavelet(f, tau, amp, phi, eta, end_time):
+    r"""Generate a single wavelet in the frequency domain.
+        This uses the Morlet-Gabot formula as listed in arXiv:2108.09344.
+
+    Parameters
+    ----------
+    amp : float
+        The wavelet amplitude.
+
+    phi : float
+        The wavelet phase.
+
+    tau : float
+        The wavelet width.
+
+    f : float
+        The wavelet frequency.
+
+    eta : float
+        The central time in seconds of the wavelet. This time corresponds to:
+
+        .. math::
+
+           h_w(t = \eta_w) = A_w\exp (i \phi_w)
+
+    end_time : float
+	The end time of the wavelet model.
+
+    Returns
+    -------
+    (array, array)
+	The frequency domain plus and cross polarizations of the wavelet.
+    """
+    ### should this be an explicit formula as listed in Eq. 14?
+    ### or should this be an FFT?
+    ### if former, need way to specify frequency series
+    ### (could probably get from wf inputs, i.e. f_ref, phi_ref)
+    ### if latter, need to verify FFT is equivalent to analytic formula
+    ### could also be a way to convert times -> freqs from f_ref, t_ref?
+    ### the freq series would have to end at t0 and start at t0-2*eta
+
+    # evaluate the wavelet
+    off_eta = freqs + eta
+    off_nu = freqs + f
+    off_time = (end_time - eta)/tau
+    htilde = amp*np.exp(-2*pi*1j*f*eta - pi*pi*off_nu*off_nu*tau*tau + 1j*phi)
+    htilde *= pi**0.5/2*tau*erf(off_time + 1j*pi*off_eta*tau)
+
+    # separate into polarizations
+    htilde_T = htilde.conjugate()
+    hptilde = (htilde + htilde_T)/2
+    hctilde = -(htilde - htilde_T)/(2j)
+    return hptilde, hctilde
 
 def wavelet_sum_base(input_params, domain):
     """Base function for returning a superposition of wavelets.
