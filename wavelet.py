@@ -17,7 +17,7 @@ def parse_params(**kwargs):
     """
     # number of wavelets
     try:
-        w = kwargs['wavelet_number']
+        w = kwargs['wavelets']
     except KeyError:
         raise ValueError('Must provide number of wavelets to generate')
 
@@ -73,17 +73,17 @@ def get_td_wavelet(f, tau, amp, phi, eta, end_time):
 
     Parameters
     ----------
+    f : float
+        The wavelet frequency.
+
+    tau : float
+        The wavelet width.
+
     amp : float
         The wavelet amplitude.
 
     phi : float
         The wavelet phase.
-
-    tau : float
-        The wavelet width.
-
-    f : float
-        The wavelet frequency.
 
     eta : float
         The central time in seconds of the wavelet. This time corresponds to:
@@ -93,8 +93,8 @@ def get_td_wavelet(f, tau, amp, phi, eta, end_time):
 	   h_w(t = \eta_w) = A_w\exp (i \phi_w)
 
     end_time : float
-	The end time in seconds of the wavelet. For example, if using for a merger model,
-	this corresponds to the coalescence time of the signal.
+	    The end time in seconds of the wavelet. For example, if using for a merger model,
+	    this corresponds to the coalescence time of the signal.
 
     Returns
     -------
@@ -116,82 +116,19 @@ def get_td_wavelet(f, tau, amp, phi, eta, end_time):
     hc = -wf.imag
     return hp, hc
 
-def get_fd_wavelet(f, tau, amp, phi, eta, end_time):
-    r"""Generate a single wavelet in the frequency domain.
-        This uses the Morlet-Gabot formula as listed in arXiv:2108.09344.
-
-    Parameters
-    ----------
-    amp : float
-        The wavelet amplitude.
-
-    phi : float
-        The wavelet phase.
-
-    tau : float
-        The wavelet width.
-
-    f : float
-        The wavelet frequency.
-
-    eta : float
-        The central time in seconds of the wavelet. This time corresponds to:
-
-        .. math::
-
-           h_w(t = \eta_w) = A_w\exp (i \phi_w)
-
-    end_time : float
-	The end time of the wavelet model.
-
-    Returns
-    -------
-    (array, array)
-	The frequency domain plus and cross polarizations of the wavelet.
-    """
-    ### should this be an explicit formula as listed in Eq. 14?
-    ### or should this be an FFT?
-    ### if former, need way to specify frequency series
-    ### (could probably get from wf inputs, i.e. f_ref, phi_ref)
-    ### if latter, need to verify FFT is equivalent to analytic formula
-    ### could also be a way to convert times -> freqs from f_ref, t_ref?
-    ### the freq series would have to end at t0 and start at t0-2*eta
-
-    # evaluate the wavelet
-    off_eta = freqs + eta
-    off_nu = freqs + f
-    off_time = (end_time - eta)/tau
-    htilde = amp*np.exp(-2*pi*1j*f*eta - pi*pi*off_nu*off_nu*tau*tau + 1j*phi)
-    htilde *= pi**0.5/2*tau*erf(off_time + 1j*pi*off_eta*tau)
-
-    # separate into polarizations
-    htilde_T = htilde.conjugate()
-    hptilde = (htilde + htilde_T)/2
-    hctilde = -(htilde - htilde_T)/(2j)
-    return hptilde, hctilde
-
-def wavelet_sum_base(input_params, domain):
+def wavelet_sum_base(input_params):
     """Base function for returning a superposition of wavelets.
 
     Parameters
     ----------
     input_params : dict
 	Dictionary of parameters for generating wavelets. See
-	get_td_wavelet or get_fd_wavelet for list of params.
-
-    domain : str
-	The domain in which to generate wavelets. Accepts 'td'
-	for time domain or 'fd' for frequency domain.
+	get_td_wavelet for list of params.
     """
     # parse parameters
     w, amps, freqs, taus, phis, etas = parse_params(**input_params)
     tc = params['tc']
     dt = params['delta_t']
-
-    ### just implementing time domain for now
-    ### need to confirm if fd wavelets are unchanged when imposing finite start time
-    if domain == 'fd':
-        raise NotImplementedError('Frequency domain wavelets not yet implemented')
 
     # allocate hp, hc vectors using the maximum wavelet length
     max_eta = max(etas.items())
@@ -213,9 +150,4 @@ def wavelet_sum_base(input_params, domain):
 def get_td_wavelet_basis(**kwargs):
     """Generate the time domain wavelet basis for a signal.
     """
-    return wavelet_sum_base(kwargs, domain='td')
-
-def get_fd_wavelet_basis(**kwargs):
-    """Generate the frequency domain wavelet basis for a signal
-    """
-    return wavelet_sum_base(kwargs, domain='fd')
+    return wavelet_sum_base(kwargs)

@@ -20,6 +20,6 @@ setup(
     install_requires = ['pycbc'],
     py_modules = ['wavelet'],
     entry_points = {'pycbc.waveform.td':'wavelet = wavelet:get_td_wavelet_basis',
-		    'pycbc.waveform.fd':'wavelet = wavelet:get_fd_wavelet_basis'},
+                    },
 )
 
