@@ -7,7 +7,7 @@
 
 import numpy as np
 import math as m
-from pycbc.types import TimeSeries
+from pycbc.types import TimeSeries, zeros
 
 pi = np.pi
 
@@ -27,8 +27,8 @@ def parse_params(**kwargs):
     phis = {}
     etas = {}
 
-    for i in len(w):
-        s = str(i)
+    for i in range(w):
+        s = str(i+1)
         # amplitude
         try:
             amps[i] = kwargs['amp' + s]
@@ -61,7 +61,7 @@ def parse_params(**kwargs):
 
         return w, amps, freqs, taus, phis, etas
 
-def get_td_wavelet(f, tau, amp, phi, eta, end_time):
+def get_td_wavelet(f, tau, amp, phi, eta, end_time, dt):
     r"""Generate a single wavelet in the time domain.
         This uses the Morlet-Gabot formula as listed in arXiv:2108.09344:
 
@@ -74,10 +74,10 @@ def get_td_wavelet(f, tau, amp, phi, eta, end_time):
     Parameters
     ----------
     f : float
-        The wavelet frequency.
+        The wavelet frequency in Hz.
 
     tau : float
-        The wavelet width.
+        The wavelet damping time in seconds.
 
     amp : float
         The wavelet amplitude.
@@ -96,14 +96,17 @@ def get_td_wavelet(f, tau, amp, phi, eta, end_time):
 	    The end time in seconds of the wavelet. For example, if using for a merger model,
 	    this corresponds to the coalescence time of the signal.
 
+    dt : float
+        The sample time in seconds of the waveform.
+
     Returns
     -------
     (array, array)
         The time domain plus and cross polarizations of the wavelet.
     """
     # generate a time series for the wavelet
-    start_time = end_time - 2*eta
-    l = int((end_time - start_time)/dt + 1)
+    start_time = end_time - 2*abs(end_time - eta)
+    l = int((end_time - start_time)/dt) + 1
     t = np.linspace(start_time, end_time, l)
 
     # evaluate the wavelet
@@ -127,19 +130,21 @@ def wavelet_sum_base(input_params):
     """
     # parse parameters
     w, amps, freqs, taus, phis, etas = parse_params(**input_params)
-    tc = params['tc']
-    dt = params['delta_t']
+    tc = input_params['tc']
+    dt = input_params['delta_t']
 
     # allocate hp, hc vectors using the maximum wavelet length
-    max_eta = max(etas.items())
-    max_length = int(2 * (tc - max_eta)/delta_t + 1)
-    hp_out = TimeSeries(zeros(max_length, dtype=float64), delta_t=delta_t)
-    hc_out = TimeSeries(zeros(max_length, dtype=float64), delta_t=delta_t)
+    max_eta = max(etas.values())
+    max_length = 2 * m.ceil((tc - max_eta)/dt) + 1
+    hp_out = TimeSeries(zeros(max_length, dtype=np.float64), delta_t=dt)
+    hc_out = TimeSeries(zeros(max_length, dtype=np.float64), delta_t=dt)
 
     # generate wavelets and add to out vectors
     for i in range(w):
-        wavelet_start_idx = ceil(int((tc - 2*etas[i])/dt))
-        hp, hc = get_td_wavelet(freqs[i], taus[i], amps[i], phis[i], etas[i], tc)
+        wavelet_start_time = tc - 2*(tc - etas[i])
+        wavelet_start_idx = max_length - m.ceil((tc - wavelet_start_time)/dt)
+        print(tc, wavelet_start_time, wavelet_start_idx, max_length)
+        hp, hc = get_td_wavelet(freqs[i], taus[i], amps[i], phis[i], etas[i], tc, dt)
         hp_out[wavelet_start_idx:] += hp
         hc_out[wavelet_start_idx:] += hc
 
