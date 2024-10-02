@@ -28,40 +28,40 @@ def parse_params(**kwargs):
     etas = {}
 
     for i in range(w):
-        s = str(i+1)
+        s = str(int(i+1))
         # amplitude
         try:
-            amps[i] = kwargs['amp' + s]
+            amps[s] = kwargs['amp' + s]
         except KeyError:
             raise ValueError(f'missing amp{i}')
 
-	# frequencies
+    	# frequencies
         try:
-            freqs[i] = kwargs['freq' + s]
+            freqs[s] = kwargs['freq' + s]
         except KeyError:
             raise ValueError(f'missing freq{i}')
 
-	# damping times
+    	# damping times
         try:
-            taus[i] = kwargs['tau' + s]
+            taus[s] = kwargs['tau' + s]
         except KeyError:
             raise ValueError(f'missing tau{i}')
 
-	# phases
+    	# phases
         try:
-            phis[i] = kwargs['phi' + s]
+            phis[s] = kwargs['phi' + s]
         except KeyError:
             raise ValueError(f'missing phi{i}')
 
-	# ref times
+    	# ref times
         try:
-            etas[i] = kwargs['eta' + s]
+            etas[s] = kwargs['eta' + s]
         except KeyError:
             raise ValueError(f'missing eta{i}')
 
-        return w, amps, freqs, taus, phis, etas
+    return w, amps, freqs, taus, phis, etas
 
-def get_td_wavelet(f, tau, amp, phi, eta, end_time, dt):
+def get_td_wavelet(f, tau, amp, phi, eta, start_time, end_time, dt):
     r"""Generate a single wavelet in the time domain.
         This uses the Morlet-Gabot formula as listed in arXiv:2108.09344:
 
@@ -92,6 +92,10 @@ def get_td_wavelet(f, tau, amp, phi, eta, end_time, dt):
 
 	   h_w(t = \eta_w) = A_w\exp (i \phi_w)
 
+    start_time : float
+        The start time in seconds of the wavelet. For example, if using for a merger model,
+        this corresponds to the ISCO time of the signal.
+
     end_time : float
 	    The end time in seconds of the wavelet. For example, if using for a merger model,
 	    this corresponds to the coalescence time of the signal.
@@ -105,7 +109,6 @@ def get_td_wavelet(f, tau, amp, phi, eta, end_time, dt):
         The time domain plus and cross polarizations of the wavelet.
     """
     # generate a time series for the wavelet
-    start_time = end_time - 2*abs(end_time - eta)
     l = int((end_time - start_time)/dt) + 1
     t = np.linspace(start_time, end_time, l)
 
@@ -130,23 +133,22 @@ def wavelet_sum_base(input_params):
     """
     # parse parameters
     w, amps, freqs, taus, phis, etas = parse_params(**input_params)
+    tisco = input_params['tisco']
     tc = input_params['tc']
     dt = input_params['delta_t']
 
-    # allocate hp, hc vectors using the maximum wavelet length
-    max_eta = max(etas.values())
-    max_length = 2 * m.ceil((tc - max_eta)/dt) + 1
-    hp_out = TimeSeries(zeros(max_length, dtype=np.float64), delta_t=dt)
-    hc_out = TimeSeries(zeros(max_length, dtype=np.float64), delta_t=dt)
+    # allocate hp, hc vectors using the length of the segment
+    tlen = tc - tisco
+    ilen = m.ceil(tlen/dt)
+    hp_out = TimeSeries(zeros(ilen, dtype=np.float64), delta_t=dt)
+    hc_out = TimeSeries(zeros(ilen, dtype=np.float64), delta_t=dt)
 
     # generate wavelets and add to out vectors
     for i in range(w):
-        wavelet_start_time = tc - 2*(tc - etas[i])
-        wavelet_start_idx = max_length - m.ceil((tc - wavelet_start_time)/dt)
-        print(tc, wavelet_start_time, wavelet_start_idx, max_length)
-        hp, hc = get_td_wavelet(freqs[i], taus[i], amps[i], phis[i], etas[i], tc, dt)
-        hp_out[wavelet_start_idx:] += hp
-        hc_out[wavelet_start_idx:] += hc
+        s = str(int(i+1))
+        hp, hc = get_td_wavelet(freqs[s], taus[s], amps[s], phis[s], etas[s], tisco, tc, dt)
+        hp_out += hp
+        hc_out += hc
 
     return hp_out, hc_out
 
