@@ -17,7 +17,7 @@ def parse_params(**kwargs):
     """
     # number of wavelets
     try:
-        w = kwargs['wavelets']
+        w = int(kwargs['wavelets'])
     except KeyError:
         raise ValueError('Must provide number of wavelets to generate')
 
@@ -97,8 +97,8 @@ def get_td_wavelet(f, tau, amp, phi, eta, start_time, end_time, dt):
         this corresponds to the ISCO time of the signal.
 
     end_time : float
-	    The end time in seconds of the wavelet. For example, if using for a merger model,
-	    this corresponds to the coalescence time of the signal.
+        The end time in seconds of the wavelet. For example, if using for a merger model,
+        this corresponds to the coalescence time of the signal.
 
     dt : float
         The sample time in seconds of the waveform.
@@ -109,7 +109,7 @@ def get_td_wavelet(f, tau, amp, phi, eta, start_time, end_time, dt):
         The time domain plus and cross polarizations of the wavelet.
     """
     # generate a time series for the wavelet
-    l = int((end_time - start_time)/dt) + 1
+    l = m.ceil((end_time - start_time)/dt)
     t = np.linspace(start_time, end_time, l)
 
     # evaluate the wavelet
@@ -133,8 +133,8 @@ def wavelet_sum_base(input_params):
     """
     # parse parameters
     w, amps, freqs, taus, phis, etas = parse_params(**input_params)
-    tisco = input_params['tisco']
-    tc = input_params['tc']
+    tisco = input_params['t_start']
+    tc = input_params['t_end']
     dt = input_params['delta_t']
 
     # allocate hp, hc vectors using the length of the segment
