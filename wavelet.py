@@ -133,6 +133,8 @@ def wavelet_sum_base(input_params):
     """
     # parse parameters
     w, amps, freqs, taus, phis, etas = parse_params(**input_params)
+    assert w > 0, "Must generate at least one wavelet in wavelet basis"
+
     t_start = input_params['t_start']
     t_end = input_params['t_end']
     dt = input_params['delta_t']
