@@ -155,6 +155,10 @@ def wavelet_sum_base(input_params):
         hp_out += hp
         hc_out += hc
 
+    ### set the end time as the zero point (assuming end time is tc for inspiral-merger models) ###
+    hp_out.start_time = -tlen
+    hc_out.start_time = -tlen
+    
     return hp_out, hc_out
 
 ### Approximants ###################################################################
